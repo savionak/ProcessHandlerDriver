@@ -2,10 +2,11 @@
 
 #include <ntddk.h>
 
-#include "..\Common\CommonDefinitions.h"
-#include "DriverFunctions.h"
-#include "Extensions.h"
+#define __DRIVER_PART__
 
+#include "..\Common\CommonDefinitions.h"
+#include "Extensions.h"
+#include "DriverFunctions.h"
 
 // Driver initialization
 DRIVER_INITIALIZE DriverEntry;
