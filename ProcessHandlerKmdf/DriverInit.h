@@ -15,4 +15,4 @@ DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD UnloadDriver;
 
 // Process creation and termination callback
-VOID SetCreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In_ BOOLEAN isCreate);
+VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In_ BOOLEAN isCreate);
