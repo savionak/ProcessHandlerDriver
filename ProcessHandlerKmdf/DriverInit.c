@@ -69,12 +69,40 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In_ BOOLEAN isCreate)
 {
 	UNREFERENCED_PARAMETER(ParentId);
-	UNREFERENCED_PARAMETER(ProcessId);
-	UNREFERENCED_PARAMETER(isCreate);
+
+	PEPROCESS pProcStruct;
+	
+	NTSTATUS status = PsLookupProcessByProcessId(ProcessId, &pProcStruct);
+	if (!NT_SUCCESS(status))
+	{
+#ifdef DBG
+		PRINT_ERROR("Can't obtain process information");
+#endif
+		return;
+	}
+	
+	STRING procName;
+	LPCSTR procNameStr = PsGetProcessImageFileName(pProcStruct);
+
+	RtlInitString(&procName, procNameStr);
 
 #ifdef DBG
-	PRINT_DEBUG("Some process was created / is about to be terminated");
+	PRINT_DEBUG("Process with pid ");
+	DbgPrint("%d and name '%s'", ProcessId, procNameStr);
 #endif
+
+	if (isCreate == TRUE)
+	{
+#ifdef DBG
+		DbgPrint(" was created\n");
+#endif
+	}
+	else
+	{
+#ifdef DBG
+		DbgPrint(" was terminated\n");
+#endif
+	}
 
 	// TODO
 }

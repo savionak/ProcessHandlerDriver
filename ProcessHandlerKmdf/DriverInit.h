@@ -1,6 +1,7 @@
 #pragma once
 
-#include <ntddk.h>
+//#include <ntddk.h>
+#include <ntifs.h>
 
 #define __DRIVER_PART__
 
@@ -16,3 +17,6 @@ DRIVER_UNLOAD UnloadDriver;
 
 // Process creation and termination callback
 VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In_ BOOLEAN isCreate);
+
+// Get process image by PID (undocumented but widely used function)
+extern LPCSTR PsGetProcessImageFileName(_In_ PEPROCESS Process);
