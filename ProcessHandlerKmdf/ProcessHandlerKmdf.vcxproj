@@ -181,6 +181,7 @@ xcopy /Y /E /S "$(TargetDir)*" "%VBOX_SHARED_FOLDER%\_Driver\$(TargetName)\"</Co
     <ClInclude Include="..\Common\CommonDefinitions.h" />
     <ClInclude Include="DriverFunctions.h" />
     <ClInclude Include="DriverInit.h" />
+    <ClInclude Include="DriverDefs.h" />
     <ClInclude Include="Extensions.h" />
   </ItemGroup>
   <ItemGroup>
