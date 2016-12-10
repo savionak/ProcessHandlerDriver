@@ -29,13 +29,31 @@ int _cdecl main(int argc, char* argv[]) {
 		printf("Fail!");
 		status = EXIT_FAILURE;
 	}
-	else {
-		printf("Okay!");
+	else
+	{
+		printf("Okay!\n");
+
+		printf("Reading test...");
+
+		READ_BUFFER_TYPE pid;
+		DWORD bytesRead = 0;
+		BOOL result = ReadFile(handle, &pid, READ_BUFFER_SIZE, &bytesRead, NULL);
+
+		if ((result == TRUE) && (bytesRead == READ_BUFFER_SIZE))
+		{
+			printf("OK\n");
+			printf("DWORD value: %ld", pid);
+		}
+		else
+		{
+			printf("FAIL");
+			status = EXIT_FAILURE;
+		}
+
+		// TODO: interact with kernelmode driver via ReadFile and DeviceIoControl
+
+		//CLoseHandle(handle);	// automatically by System
 	}
-
-	// TODO: interact with kernelmode driver via ReadFile and DeviceIoControl
-
-	//CLoseHandle(handle);	// automatically by System
 
 	getchar();
 	getchar();
