@@ -31,7 +31,28 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	DbgPrint("OK");
 #endif
 
-	// Create device symbolic link
+#ifdef DBG
+	PRINT_DEBUG("Creating device symbolic link...");
+#endif
+	PDEVICE_EXTENSION pDeviceExt = (PDEVICE_EXTENSION)pDeviceObj->DeviceExtension;
+
+	UNICODE_STRING symLinkName;
+	RtlInitUnicodeString(&symLinkName, SYM_LINK_REG_NAME_W);
+
+	status = IoCreateSymbolicLink(&symLinkName, &devName);
+	if (!NT_SUCCESS(status)) {
+#ifdef DBG
+		DbgPrint("ERROR!");
+		PRINT_ERROR("Can't create symbolic link!");
+#endif
+		IoDeleteDevice(pDeviceObj);
+		return status;
+	}
+
+	pDeviceExt->symLink = symLinkName;
+#ifdef DBG
+	DbgPrint("OK");
+#endif
 
 	// Register major functions
 
@@ -89,6 +110,11 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 	PDEVICE_OBJECT pCurrentDevice = pDriverObject->DeviceObject;
 	while(pCurrentDevice != NULL) {
 		PDEVICE_OBJECT pNextObject = pCurrentDevice->NextDevice;
+
+		PDEVICE_EXTENSION pDeviceExt = (PDEVICE_EXTENSION)pCurrentDevice->DeviceExtension;
+		PUNICODE_STRING pSymbolicLink = &(pDeviceExt->symLink);
+
+		IoDeleteSymbolicLink(pSymbolicLink);
 		IoDeleteDevice(pCurrentDevice);
 
 		pCurrentDevice = pNextObject;
