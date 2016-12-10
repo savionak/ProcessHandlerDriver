@@ -12,6 +12,26 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 #endif
 
 #ifdef DBG
+	PRINT_DEBUG("Allocating DriverObjectExtension...");
+#endif
+
+	PDRIVER_EXTENSION_EX pDriverExt;
+	status = IoAllocateDriverObjectExtension(pDriverObject, CLIENT_ID_ADDR, sizeof(PDRIVER_EXTENSION_EX), &pDriverExt);
+	if (!NT_SUCCESS(status)) {
+#ifdef DBG
+		DbgPrint("ERROR!");
+		PRINT_ERROR("Failed on allocating DriverObjectExtention.\n");
+#endif
+		return status;
+	}
+
+	RtlInitString(&(pDriverExt->targetName), TARGET_PROCESS_NAME);
+
+#ifdef DBG
+	DbgPrint("OK");
+#endif
+
+#ifdef DBG
 	PRINT_DEBUG("Creating device...");
 #endif
 	PDEVICE_OBJECT pDeviceObj;

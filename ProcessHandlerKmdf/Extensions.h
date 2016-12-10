@@ -1,6 +1,12 @@
 #pragma once
 
-// Driver Object Extension structure
+// Driver and Device Objects Extension structure
+
+#define CLIENT_ID_ADDR (PVOID)0
+
+typedef struct _DRIVER_EXTENSION_EX {
+	STRING targetName;
+} DRIVER_EXTENSION_EX, *PDRIVER_EXTENSION_EX;
 
 typedef struct _DEVICE_EXTENSION {
 	UNICODE_STRING symLink;
