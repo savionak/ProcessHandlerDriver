@@ -8,7 +8,16 @@ int _cdecl main(int argc, char* argv[]) {
 
 	int status = EXIT_SUCCESS;
 
-	HANDLE handle = CreateFile(L"\\\\.\\" DEVICE_NAME_W,
+	printf("Enter file name: ");
+
+	WCHAR* pfileName = (WCHAR*)malloc(MAX_PATH * sizeof(WCHAR));
+	wscanf_s(L"%ws", pfileName);
+
+	WCHAR* pFullName = (WCHAR*)malloc(MAX_PATH * sizeof(WCHAR));
+	swprintf_s(pFullName, MAX_PATH, L"\\\\.\\" DEVICE_NAME_W L"\\%ws", pfileName);
+
+
+	HANDLE handle = CreateFile(pFullName,
 		GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ | FILE_SHARE_WRITE,
 		NULL,
@@ -19,16 +28,17 @@ int _cdecl main(int argc, char* argv[]) {
 	if (handle == INVALID_HANDLE_VALUE) {
 		printf("Fail!");
 		status = EXIT_FAILURE;
-		return status;
 	}
 	else {
 		printf("Okay!");
-		getchar();
 	}
 
 	// TODO: interact with kernelmode driver via ReadFile and DeviceIoControl
 
 	//CLoseHandle(handle);	// automatically by System
+
+	getchar();
+	getchar();
 
 	return status;
 }
