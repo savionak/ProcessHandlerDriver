@@ -8,6 +8,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 
 #ifdef DBG
 	PRINT_DEBUG("Loading driver...");
+	DbgBreakPoint();
 #endif
 
 #ifdef DBG
@@ -26,6 +27,8 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 #endif
 		return status;
 	}
+
+	pDeviceObj->Flags |= DO_BUFFERED_IO;
 
 #ifdef DBG
 	DbgPrint("OK");

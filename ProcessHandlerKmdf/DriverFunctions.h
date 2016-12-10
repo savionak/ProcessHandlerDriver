@@ -1,6 +1,7 @@
 #pragma once
 
-#include <ntddk.h>
+//#include <ntddk.h>
+#include <ntifs.h>
 
 #include "DriverDefs.h"
 #include "Extensions.h"
