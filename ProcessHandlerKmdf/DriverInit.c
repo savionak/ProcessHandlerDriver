@@ -1,5 +1,7 @@
 #include "DriverInit.h"
 
+PDRIVER_OBJECT gDrvObj = NULL;
+
 NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegistryPath)
 {
 	NTSTATUS status = STATUS_SUCCESS;
@@ -123,6 +125,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	PRINT_DEBUG("Driver loaded.\n");
 #endif
 
+	gDrvObj = pDriverObject;	// to access from callback
 	return status;
 }
 
@@ -178,7 +181,6 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 	UNREFERENCED_PARAMETER(ParentId);
 
 	PEPROCESS pProcStruct;
-	
 	NTSTATUS status = PsLookupProcessByProcessId(ProcessId, &pProcStruct);
 	if (!NT_SUCCESS(status))
 	{
@@ -193,23 +195,37 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 
 	RtlInitString(&procName, procNameStr);
 
-#ifdef DBG
-	PRINT_DEBUG("Process with pid ");
-	DbgPrint("%d and name '%s'", ProcessId, procNameStr);
-#endif
-
-	if (isCreate == TRUE)
+	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(gDrvObj, CLIENT_ID_ADDR);
+	if (pDrvExt == NULL)
 	{
 #ifdef DBG
-		DbgPrint(" was created\n");
+		PRINT_ERROR("Can't get DriverObjectExtension");
 #endif
-	}
-	else
-	{
-#ifdef DBG
-		DbgPrint(" was terminated\n");
-#endif
+		return;
 	}
 
-	// TODO
+	BOOLEAN isTarget = RtlEqualString(&(pDrvExt->targetName), &procName, TRUE);
+	if (isTarget)
+	{
+#ifdef DBG
+		PRINT_DEBUG("Target process hit!");
+		DbgPrint(" PID: %d ", ProcessId);
+		DbgPrint("Action: ");
+#endif
+
+		if (isCreate == TRUE)
+		{
+#ifdef DBG
+			DbgPrint(" Created\n");
+#endif
+			// TODO
+		}
+		else
+		{
+#ifdef DBG
+			DbgPrint(" Terminated\n");
+#endif
+			// TODO
+		}
+	}
 }
