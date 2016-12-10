@@ -8,10 +8,10 @@
 
 // Major driver functions to register in DriverEntry
 
-// CreateFile dispatcher
+// ReadWrite dispatcher
 DRIVER_DISPATCH DispatchReadWrite;
 
-// CloseHandle dispatcher
+// CreateFile/CloseHandle dispatcher
 DRIVER_DISPATCH DispatchCreateClose;
 
 // DeviceIoControl dispatcher

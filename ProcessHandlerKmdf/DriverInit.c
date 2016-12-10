@@ -53,6 +53,8 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	}
 
 	pDeviceExt->symLink = symLinkName;
+	pDeviceExt->isFileOpen = FALSE;
+
 #ifdef DBG
 	DbgPrint("OK");
 #endif
