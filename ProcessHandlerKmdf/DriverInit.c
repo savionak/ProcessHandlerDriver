@@ -28,6 +28,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	}
 
 	RtlInitString(&(pDriverExt->targetName), TARGET_PROCESS_NAME);
+	pDriverExt->lastTargetPid = (READ_BUFFER_TYPE)0;
 
 #ifdef DBG
 	DbgPrint("OK");
@@ -218,7 +219,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 #ifdef DBG
 			DbgPrint(" Created\n");
 #endif
-			// TODO
+			pDrvExt->lastTargetPid = ProcessId;
 		}
 		else
 		{

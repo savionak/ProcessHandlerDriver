@@ -64,7 +64,18 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 
 			if (NT_SUCCESS(status))
 			{
-				*buf = PsGetCurrentProcessId();
+				PDRIVER_EXTENSION_EX pDrvExt = (PDRIVER_EXTENSION_EX)IoGetDriverObjectExtension(pDeviceObj->DriverObject, CLIENT_ID_ADDR);
+				if (pDrvExt == NULL)
+				{
+#ifdef DBG
+					PRINT_ERROR("Can't get DriverObjectExtension");
+#endif
+					*buf = (READ_BUFFER_TYPE)0;
+				}
+				else
+				{
+					*buf = pDrvExt->lastTargetPid;
+				}
 #ifdef DBG
 				PRINT_DEBUG("Value ");
 				DbgPrint("%ld is read ", *buf);
