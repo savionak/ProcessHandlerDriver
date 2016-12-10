@@ -10,6 +10,29 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	PRINT_DEBUG("Loading driver...");
 #endif
 
+#ifdef DBG
+	PRINT_DEBUG("Creating device...");
+#endif
+	PDEVICE_OBJECT pDeviceObj;
+
+	UNICODE_STRING devName;
+	RtlInitUnicodeString(&devName, SYS_DEVICE_REG_NAME_W);
+
+	status = IoCreateDevice(pDriverObject, sizeof(DEVICE_EXTENSION), &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, &pDeviceObj);
+	if (!NT_SUCCESS(status)) {
+#ifdef DBG
+		DbgPrint("ERROR!");
+		PRINT_ERROR("Failed on creating device.\n");
+#endif
+		return status;
+	}
+
+#ifdef DBG
+	DbgPrint("OK");
+#endif
+
+	// Create device symbolic link
+
 	// Register major functions
 
 	pDriverObject->DriverUnload = UnloadDriver;
@@ -23,7 +46,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	{
 #ifdef DBG
 		DbgPrint("ERROR!");
-		PRINT_ERROR("Failed on CreateProcessNotifyRoutine registration.");
+		PRINT_ERROR("Failed on CreateProcessNotifyRoutine registration.\n");
 #endif
 		return status;
 	}
@@ -57,7 +80,22 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 	PsSetCreateProcessNotifyRoutine(CreateProcessNotifyRoutine, TRUE);
 
 #ifdef DBG
-	PRINT_DEBUG("OK");
+	PRINT_DEBUG("READY");
+#endif
+
+#ifdef DBG
+	PRINT_DEBUG("Deleting devices...");
+#endif
+	PDEVICE_OBJECT pCurrentDevice = pDriverObject->DeviceObject;
+	while(pCurrentDevice != NULL) {
+		PDEVICE_OBJECT pNextObject = pCurrentDevice->NextDevice;
+		IoDeleteDevice(pCurrentDevice);
+
+		pCurrentDevice = pNextObject;
+	}
+
+#ifdef DBG
+	PRINT_DEBUG("READY");
 #endif
 
 #ifdef DBG
@@ -76,7 +114,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 	if (!NT_SUCCESS(status))
 	{
 #ifdef DBG
-		PRINT_ERROR("Can't obtain process information");
+		PRINT_ERROR("Can't obtain process information\n");
 #endif
 		return;
 	}
