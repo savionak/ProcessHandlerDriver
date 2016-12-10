@@ -52,11 +52,20 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 		return status;
 	}
 
+	UNICODE_STRING fileFullName;
+	RtlInitUnicodeString(&fileFullName, L"\\" READ_FILE_NAME);
+
 	pDeviceExt->symLink = symLinkName;
 	pDeviceExt->isFileOpen = FALSE;
+	pDeviceExt->fileName = fileFullName;
 
 #ifdef DBG
 	DbgPrint("OK");
+#endif
+
+#ifdef DBG
+	PRINT_DEBUG("Valid file name to open is:");
+	DbgPrint("%wZ", &fileFullName);
 #endif
 
 #ifdef DBG

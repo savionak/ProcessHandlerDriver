@@ -8,6 +8,8 @@
 #define DEVICE_NAME_W DRIVER_NAME_W
 #define SYS_DEVICE_NAME_W L"PROC_HANDLER_KMDF"
 
+#define READ_FILE_NAME L"File00"
+
 // Read buffer size
 #define READ_BUFFER_TYPE HANDLE
 #define READ_BUFFER_SIZE sizeof(READ_BUFFER_TYPE)

@@ -8,7 +8,7 @@ int _cdecl main(int argc, char* argv[]) {
 
 	int status = EXIT_SUCCESS;
 
-	printf("Enter file name: ");
+	wprintf(L"Enter file name ('%ws' is valid): ", READ_FILE_NAME);
 
 	WCHAR* pfileName = (WCHAR*)malloc(MAX_PATH * sizeof(WCHAR));
 	wscanf_s(L"%ws", pfileName);

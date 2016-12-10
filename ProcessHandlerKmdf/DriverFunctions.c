@@ -108,23 +108,38 @@ NTSTATUS DispatchCreateClose(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 	ULONG info = FILE_EXISTS;
 	if (FlagOn(pIrp->Flags, IRP_CREATE_OPERATION))
 	{
-		if (!(pDeviceExt->isFileOpen))
+		PUNICODE_STRING readFileName = &(pDeviceExt->fileName);
+		PUNICODE_STRING openingFileName = &(pIrpStack->FileObject->FileName);
+
+		BOOLEAN isReadFile = RtlEqualUnicodeString(openingFileName, readFileName, TRUE);
+		if (isReadFile)
 		{
-			pDeviceExt->isFileOpen = TRUE;
-			info = FILE_OPENED;
+			if (!(pDeviceExt->isFileOpen))
+			{
+				pDeviceExt->isFileOpen = TRUE;
+				info = FILE_OPENED;
 #ifdef DBG
-			DbgPrint(" opened.");
+				DbgPrint(" opened.");
 #endif
 
-			// TODO
+				// TODO
 
+			}
+			else
+			{
+				status = STATUS_FILE_NOT_AVAILABLE;
+#ifdef DBG
+				DbgPrint(" can't be opened");
+				PRINT_ERROR("File is already opened in another program\n");
+#endif
+			}
 		}
 		else
 		{
 			status = STATUS_FILE_NOT_AVAILABLE;
 #ifdef DBG
-			DbgPrint(" can't be opened");
-			PRINT_ERROR("File is already opened in another program\n");
+			DbgPrint(" not found.");
+			PRINT_ERROR("Incorrect file name.");
 #endif
 		}
 	}
