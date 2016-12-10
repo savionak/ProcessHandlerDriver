@@ -40,14 +40,37 @@ NTSTATUS DispatchCreateClose(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 	PIO_STACK_LOCATION pIrpStack = IoGetCurrentIrpStackLocation(pIrp);
 
 	UNREFERENCED_PARAMETER(pDeviceObj);
-	UNREFERENCED_PARAMETER(pIrpStack);
+	
+#ifdef DBG
+	PRINT_DEBUG("File ");
+	PUNICODE_STRING pUstr = &(pIrpStack->FileObject->FileName);
+	DbgPrint("%wZ ", pUstr);
+//	DbgPrint("%.*ws", pUstr->Length / sizeof(WCHAR), pUstr);
+#endif
+
+	ULONG info = FILE_EXISTS;
+	if ((pIrp->Flags & IRP_CREATE_OPERATION) == IRP_CREATE_OPERATION)
+	{
+#ifdef DBG
+		DbgPrint(" opened.");
+#endif
+		info = FILE_OPENED;
+	}
+	else if ((pIrp->Flags & IRP_CLOSE_OPERATION) == IRP_CLOSE_OPERATION)
+	{
+#ifdef DBG
+		DbgPrint(" closed.");
+#endif
+		status = STATUS_FILE_CLOSED;
+	}
+
 
 	// TODO 
 
 #ifdef DBG
 	PRINT_DEBUG("Complite CreateClose dispatch routine\n");
 #endif
-	CompleteIrp(pIrp, status, 0);
+	CompleteIrp(pIrp, status, info);
 	return status;
 }
 
