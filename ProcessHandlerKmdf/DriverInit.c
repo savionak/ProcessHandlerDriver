@@ -54,7 +54,16 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	DbgPrint("OK");
 #endif
 
-	// Register major functions
+#ifdef DBG
+	PRINT_DEBUG("Registering major functions...");
+#endif
+	pDriverObject->MajorFunction[IRP_MJ_CREATE] = DispatchCreateClose;
+	pDriverObject->MajorFunction[IRP_MJ_CLOSE] = DispatchCreateClose;
+	pDriverObject->MajorFunction[IRP_MJ_READ] = DispatchReadWrite;
+	pDriverObject->MajorFunction[IRP_MJ_WRITE] = DispatchReadWrite;
+#ifdef DBG
+	DbgPrint("OK");
+#endif
 
 	pDriverObject->DriverUnload = UnloadDriver;
 

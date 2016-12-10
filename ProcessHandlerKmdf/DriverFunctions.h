@@ -8,3 +8,12 @@
 #include "Extensions.h"
 
 // Major driver functions to register in DriverEntry
+
+// CreateFile dispatcher
+DRIVER_DISPATCH DispatchReadWrite;
+
+// CloseHandle dispatcher
+DRIVER_DISPATCH DispatchCreateClose;
+
+// DeviceIoControl dispatcher
+DRIVER_DISPATCH DeviceControlRoutine;
