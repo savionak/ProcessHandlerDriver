@@ -46,31 +46,24 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 		}
 		else
 		{
-			READ_BUFFER_TYPE *buf = NULL;
-			if (FlagOn(pIrpStack->FileObject->DeviceObject->Flags, DO_BUFFERED_IO))
+			PMDL mdlAddr = pIrp->MdlAddress;
+			if (mdlAddr == NULL)
 			{
 #ifdef DBG
-				PRINT_DEBUG("Buffered I/O");
+				PRINT_ERROR("Empty buffer!");
 #endif
-				buf = pIrp->AssociatedIrp.SystemBuffer;
+				status = STATUS_BUFFER_TOO_SMALL;
 			}
 			else
 			{
-#ifdef DBG
-				PRINT_ERROR("Unsupported I/O method");
-#endif
-				status = STATUS_NOT_SUPPORTED;
-			}
-
-			if (NT_SUCCESS(status))
-			{
+				READ_BUFFER_TYPE *buf = MmGetSystemAddressForMdlSafe(mdlAddr, LowPagePriority);
 				PDRIVER_EXTENSION_EX pDrvExt = (PDRIVER_EXTENSION_EX)IoGetDriverObjectExtension(pDeviceObj->DriverObject, CLIENT_ID_ADDR);
 				if (pDrvExt == NULL)
 				{
 #ifdef DBG
 					PRINT_ERROR("Can't get DriverObjectExtension");
 #endif
-					*buf = (READ_BUFFER_TYPE)0;
+					status = STATUS_SOURCE_ELEMENT_EMPTY;
 				}
 				else
 				{
@@ -89,7 +82,7 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 						KeReleaseSpinLock(pSpinLock, oldIrql);
 
 						*buf = nextTarget->data;
-						MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
+						ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
 #ifdef DBG
 						DbgPrint("SUCCESS");
 						PRINT_DEBUG("Value ");
@@ -103,6 +96,7 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 						DbgPrint("FAILED");
 						PRINT_DEBUG("Targets list is empty");
 #endif
+						status = STATUS_SOURCE_ELEMENT_EMPTY;
 					}
 
 				}	// DrvExt != NULL

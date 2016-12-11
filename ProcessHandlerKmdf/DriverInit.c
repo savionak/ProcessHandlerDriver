@@ -61,7 +61,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 		return status;
 	}
 
-	pDeviceObj->Flags |= DO_BUFFERED_IO;
+	pDeviceObj->Flags |= DO_DIRECT_IO;
 
 #ifdef DBG
 	DbgPrint("OK");
@@ -173,7 +173,7 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 		while (!IsListEmpty(targetsList))
 		{
 			PLIST_ENTRY nextTarget = RemoveHeadList(targetsList);
-			MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
+			ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
 		}
 		
 #ifdef DBG
@@ -251,7 +251,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 #ifdef DBG
 			DbgPrint(" Created\n");
 #endif
-			PTARGETS_LIST_ENTRY newEntry = MmAllocateNonCachedMemory(sizeof(TARGETS_LIST_ENTRY));
+			PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
 			newEntry->data = ProcessId;
 
 #ifdef DBG
