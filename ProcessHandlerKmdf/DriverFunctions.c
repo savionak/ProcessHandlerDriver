@@ -27,7 +27,7 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 	DbgPrint("%wZ", pUstr);
 #endif
 	
-	ULONG info = FILE_EXISTS;
+	ULONG bytesTrasfered = 0;
 	
 	// TODO: Check for existing "file"
 
@@ -83,6 +83,8 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 
 						*buf = nextTarget->data;
 						ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
+						bytesTrasfered = READ_BUFFER_SIZE;
+
 #ifdef DBG
 						DbgPrint("SUCCESS");
 						PRINT_DEBUG("Value ");
@@ -116,7 +118,7 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 #ifdef DBG
 	PRINT_DEBUG("Complite ReadWrite dispatch routine\n");
 #endif
-	CompleteIrp(pIrp, status, info);
+	CompleteIrp(pIrp, status, bytesTrasfered);
 	return status;
 }
 
