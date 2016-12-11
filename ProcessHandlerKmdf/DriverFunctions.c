@@ -74,30 +74,42 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 				}
 				else
 				{
-					PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
+#ifdef DBG
+					PRINT_DEBUG("Getting last target..");
+#endif	
+					PKSPIN_LOCK pSpinLock = &(pDrvExt->targetListAccessSync);
 
+					KIRQL oldIrql;
+					KeAcquireSpinLock(pSpinLock, &oldIrql);
+
+					PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
 					if (!IsListEmpty(targetsList))
 					{
 						PTARGETS_LIST_ENTRY nextTarget = (PTARGETS_LIST_ENTRY)RemoveHeadList(targetsList);
+						KeReleaseSpinLock(pSpinLock, oldIrql);
 
 						*buf = nextTarget->data;
-
 						MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
+#ifdef DBG
+						DbgPrint("SUCCESS");
+						PRINT_DEBUG("Value ");
+						DbgPrint("%ld is read ", *buf);
+#endif
 					}
 					else
 					{
+						KeReleaseSpinLock(pSpinLock, oldIrql);
 #ifdef DBG
+						DbgPrint("FAILED");
 						PRINT_DEBUG("Targets list is empty");
 #endif
 					}
 
-				}
-#ifdef DBG
-				PRINT_DEBUG("Value ");
-				DbgPrint("%ld is read ", *buf);
-#endif
-			}
-		}
+				}	// DrvExt != NULL
+
+			}	// STATUS_SUCCESS
+
+		}	// normal buffer size
 	}
 	else
 	{

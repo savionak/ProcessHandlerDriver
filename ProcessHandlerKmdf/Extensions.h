@@ -17,6 +17,7 @@ typedef struct _TARGETS_LIST_ENTRY {
 typedef struct _DRIVER_EXTENSION_EX {
 	STRING targetName;
 	LIST_ENTRY targetsList;
+	KSPIN_LOCK targetListAccessSync;
 } DRIVER_EXTENSION_EX, *PDRIVER_EXTENSION_EX;
 
 

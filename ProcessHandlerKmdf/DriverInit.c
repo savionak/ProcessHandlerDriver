@@ -35,7 +35,13 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	InitializeListHead(&(pDriverExt->targetsList));
 
 #ifdef DBG
-	DbgPrint("OK");
+	DbgPrint("(target name ok)");
+#endif
+
+	KeInitializeSpinLock(&(pDriverExt->targetListAccessSync));
+
+#ifdef DBG
+	DbgPrint("(event ok)");
 #endif
 
 #ifdef DBG
@@ -169,11 +175,11 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 			PLIST_ENTRY nextTarget = RemoveHeadList(targetsList);
 			MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
 		}
+		
 #ifdef DBG
 		PRINT_DEBUG("READY");
 #endif
 	}
-
 
 
 #ifdef DBG
@@ -248,7 +254,13 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 			PTARGETS_LIST_ENTRY newEntry = MmAllocateNonCachedMemory(sizeof(TARGETS_LIST_ENTRY));
 			newEntry->data = ProcessId;
 
-			InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));
+#ifdef DBG
+			PRINT_DEBUG("Inserting new target");
+#endif
+			PKSPIN_LOCK spinLock = &(pDrvExt->targetListAccessSync);
+
+			ExInterlockedInsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry), spinLock);
+
 		}
 		else
 		{
