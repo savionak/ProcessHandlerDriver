@@ -28,7 +28,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	}
 
 	RtlInitString(&(pDriverExt->targetName), TARGET_PROCESS_NAME);
-	pDriverExt->lastTargetPid = (READ_BUFFER_TYPE)0;
+	InitializeListHead(&(pDriverExt->targetsList));
 
 #ifdef DBG
 	DbgPrint("OK");
@@ -139,7 +139,6 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 	PRINT_DEBUG("Unloading driver...");
 #endif
 
-	// TODO: Clear driver resources
 
 #ifdef DBG
 	PRINT_DEBUG("Unregistering CreateProcessNotifyRoutine...");
@@ -150,6 +149,28 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 #ifdef DBG
 	PRINT_DEBUG("READY");
 #endif
+
+	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(pDriverObject, CLIENT_ID_ADDR);
+
+	// !!! Only AFTER unregistrting CALLBACK !!!
+	if (pDrvExt != NULL)
+	{
+#ifdef DBG
+		PRINT_DEBUG("Cleaning targets list...");
+#endif
+
+		PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
+		while (!IsListEmpty(targetsList))
+		{
+			PLIST_ENTRY nextTarget = RemoveHeadList(targetsList);
+			MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
+		}
+#ifdef DBG
+		PRINT_DEBUG("READY");
+#endif
+	}
+
+
 
 #ifdef DBG
 	PRINT_DEBUG("Deleting devices...");
@@ -170,6 +191,7 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 #ifdef DBG
 	PRINT_DEBUG("READY");
 #endif
+
 
 #ifdef DBG
 	PRINT_DEBUG("Driver unloaded.\n");
@@ -219,7 +241,10 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 #ifdef DBG
 			DbgPrint(" Created\n");
 #endif
-			pDrvExt->lastTargetPid = ProcessId;
+			PTARGETS_LIST_ENTRY newEntry = MmAllocateNonCachedMemory(sizeof(TARGETS_LIST_ENTRY));
+			newEntry->data = ProcessId;
+
+			InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));
 		}
 		else
 		{

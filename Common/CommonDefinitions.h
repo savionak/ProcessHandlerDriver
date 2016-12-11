@@ -12,7 +12,7 @@
 #define READ_FILE_NAME L"File00"
 
 // Read buffer size
-#define READ_BUFFER_TYPE HANDLE
+#define READ_BUFFER_TYPE HANDLE	// must NOT be or contain any pointers (lazy processing)
 #define READ_BUFFER_SIZE sizeof(READ_BUFFER_TYPE)
 
 // Target process name

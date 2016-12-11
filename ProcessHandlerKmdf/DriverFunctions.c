@@ -74,7 +74,23 @@ NTSTATUS DispatchReadWrite(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp) {
 				}
 				else
 				{
-					*buf = pDrvExt->lastTargetPid;
+					PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
+
+					if (!IsListEmpty(targetsList))
+					{
+						PTARGETS_LIST_ENTRY nextTarget = (PTARGETS_LIST_ENTRY)RemoveHeadList(targetsList);
+
+						*buf = nextTarget->data;
+
+						MmFreeNonCachedMemory(nextTarget, sizeof(TARGETS_LIST_ENTRY));
+					}
+					else
+					{
+#ifdef DBG
+						PRINT_DEBUG("Targets list is empty");
+#endif
+					}
+
 				}
 #ifdef DBG
 				PRINT_DEBUG("Value ");
