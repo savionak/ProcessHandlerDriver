@@ -26,24 +26,33 @@ int _cdecl main(int argc, char* argv[]) {
 
 		printf("Reading test...");
 
-		READ_BUFFER_TYPE pid;
+		READ_BUFFER_TYPE data;
+		data.pid = 0;
+		data.isCreate = FALSE;
+
 		DWORD bytesRead = 0;
 		BOOL result = TRUE;
-		while (status != EXIT_FAILURE) {
-			result = ReadFile(handle, &pid, READ_BUFFER_SIZE, &bytesRead, NULL);
+//		while (status != EXIT_FAILURE) {
+			result = ReadFile(handle, &data, READ_BUFFER_SIZE, &bytesRead, NULL);
 
-			if ((result == TRUE) && (bytesRead == READ_BUFFER_SIZE))
+			if ((result == TRUE) )// && (bytesRead == READ_BUFFER_SIZE))
 			{
-				printf("OK\n");
-				printf("DWORD value: %ld", pid);
+				printf("pid: %ld action: %s",
+					data.pid, 
+					data.isCreate ? "Create" : "Terminate"
+					);
 			}
-		}
+			else
+			{
+				printf("FAILED - buffer is empty");
+			}
+//		}
 		// TODO: interact with kernelmode driver via ReadFile and DeviceIoControl
 
 		//CLoseHandle(handle);	// automatically by System
 	}
 
-	getchar();
+//	getchar();
 	getchar();
 
 	return status;

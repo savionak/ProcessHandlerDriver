@@ -244,30 +244,22 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 		PRINT_DEBUG("Target process hit!");
 		DbgPrint(" PID: %d ", ProcessId);
 		DbgPrint("Action: ");
-#endif
-
-		if (isCreate == TRUE)
-		{
-#ifdef DBG
+		if (isCreate)
 			DbgPrint(" Created\n");
-#endif
-			PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
-			newEntry->data = ProcessId;
-
-#ifdef DBG
-			PRINT_DEBUG("Inserting new target");
-#endif
-			PKSPIN_LOCK spinLock = &(pDrvExt->targetListAccessSync);
-
-			ExInterlockedInsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry), spinLock);
-
-		}
 		else
-		{
-#ifdef DBG
 			DbgPrint(" Terminated\n");
 #endif
-			// TODO
-		}
+
+		PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
+		newEntry->data.pid = ProcessId;
+		newEntry->data.isCreate = isCreate;
+
+#ifdef DBG
+		PRINT_DEBUG("Inserting new target");
+#endif
+		PKSPIN_LOCK spinLock = &(pDrvExt->targetListAccessSync);
+
+		ExInterlockedInsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry), spinLock);
+
 	}
 }

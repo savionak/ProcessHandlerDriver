@@ -11,8 +11,13 @@
 // Read buffer file name
 #define READ_FILE_NAME L"File00"
 
+typedef struct _DATA_BUFFER {
+	HANDLE pid;
+	BOOLEAN isCreate;
+} DATA_BUFFER;
+
 // Read buffer size
-#define READ_BUFFER_TYPE HANDLE	// must NOT be or contain any pointers (lazy processing)
+#define READ_BUFFER_TYPE DATA_BUFFER	// must NOT be or contain any pointers (lazy processing)
 #define READ_BUFFER_SIZE sizeof(READ_BUFFER_TYPE)
 
 // Target process name
