@@ -10,7 +10,11 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 
 #ifdef DBG
 	PRINT_DEBUG("Loading driver...");
+
+#ifdef DBG_INIT_BREAK
 	DbgBreakPoint();
+#endif
+
 #endif
 
 #ifdef DBG

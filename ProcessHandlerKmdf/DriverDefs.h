@@ -9,3 +9,6 @@
 // Symbolic link and device name to register
 #define	SYM_LINK_REG_NAME_W L"\\DosDevices\\" DEVICE_NAME_W
 #define	SYS_DEVICE_REG_NAME_W L"\\Device\\" SYS_DEVICE_NAME_W
+
+// Optional breakpoints (comment to disable)
+#define DBG_INIT_BREAK
