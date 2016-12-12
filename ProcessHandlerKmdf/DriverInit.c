@@ -4,9 +4,9 @@ PDRIVER_OBJECT gDrvObj = NULL;
 
 NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegistryPath)
 {
-	NTSTATUS status = STATUS_SUCCESS;
-
 	UNREFERENCED_PARAMETER(pRegistryPath);
+
+	NTSTATUS status = STATUS_SUCCESS;
 
 #ifdef DBG
 	PRINT_DEBUG("Loading driver...");
@@ -23,6 +23,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 
 	PDRIVER_EXTENSION_EX pDriverExt;
 	status = IoAllocateDriverObjectExtension(pDriverObject, CLIENT_ID_ADDR, sizeof(PDRIVER_EXTENSION_EX), &pDriverExt);
+
 	if (!NT_SUCCESS(status)) {
 #ifdef DBG
 		DbgPrint("ERROR!");
@@ -38,12 +39,13 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	DbgPrint("(target name OK)...");
 #endif
 
-	KeInitializeSpinLock(&(pDriverExt->targetListAccessSync));
+	KeInitializeSpinLock(&(pDriverExt->drvExtSpinLock));
 	pDriverExt->pendingIrp = NULL;
 
 #ifdef DBG
 	DbgPrint("OK");
 #endif
+
 
 #ifdef DBG
 	PRINT_DEBUG("Creating device...");
@@ -158,16 +160,15 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 	PsSetCreateProcessNotifyRoutine(CreateProcessNotifyRoutine, TRUE);
 
 #ifdef DBG
-	PRINT_DEBUG("READY");
+	DbgPrint("READY");
 #endif
+
 
 	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(pDriverObject, CLIENT_ID_ADDR);
 
 	// !!! Only AFTER unregistrting CALLBACK !!!
-	if (pDrvExt != NULL)
-	{
 #ifdef DBG
-		PRINT_DEBUG("Cleaning targets list...");
+	PRINT_DEBUG("Cleaning targets list...");
 #endif
 
 		PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
@@ -178,9 +179,8 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 		}
 		
 #ifdef DBG
-		PRINT_DEBUG("READY");
+	DbgPrint("READY");
 #endif
-	}
 
 
 #ifdef DBG
@@ -200,7 +200,7 @@ VOID UnloadDriver(_In_ PDRIVER_OBJECT pDriverObject)
 	}
 
 #ifdef DBG
-	PRINT_DEBUG("READY");
+	DbgPrint("READY");
 #endif
 
 
@@ -215,10 +215,20 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 	UNREFERENCED_PARAMETER(ParentId);
 
 	PDEVICE_EXTENSION pDeviceExt = gDrvObj->DeviceObject->DeviceExtension;
-	if (!(pDeviceExt->isFileOpen))
+	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(gDrvObj, CLIENT_ID_ADDR);
+
+	PKSPIN_LOCK pSpinLock = &(pDrvExt->drvExtSpinLock);
+	KIRQL oldIrql;
+
+	KeAcquireSpinLock(pSpinLock, &oldIrql);
 	{
-		return;
+		if (!(pDeviceExt->isFileOpen))
+		{
+			KeReleaseSpinLock(pSpinLock, oldIrql);
+			return;
+		}
 	}
+	KeReleaseSpinLock(pSpinLock, oldIrql);
 
 	PEPROCESS pProcStruct;
 	NTSTATUS status = PsLookupProcessByProcessId(ProcessId, &pProcStruct);
@@ -234,9 +244,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 	LPCSTR procNameStr = PsGetProcessImageFileName(pProcStruct);
 
 	RtlInitString(&procName, procNameStr);
-
-	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(gDrvObj, CLIENT_ID_ADDR);
-
+	
 	BOOLEAN isTarget = RtlEqualString(&(pDrvExt->targetName), &procName, TRUE);
 	if (isTarget)
 	{
@@ -246,39 +254,32 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 
 #ifdef DBG
 		PRINT_DEBUG("Target process hit!");
-		DbgPrint(" PID: %d ", ProcessId);
-		DbgPrint("Action: ");
-		if (isCreate)
-			DbgPrint(" Created\n");
-		else
-			DbgPrint(" Terminated\n");
+		DbgPrint(" PID: %d Action: %s\n", ProcessId, isCreate? "Created" : "Terminated");
 #endif
-
-		PKSPIN_LOCK pSpinLock = &(pDrvExt->targetListAccessSync);
-
-		KIRQL oldIrql;
+		
 		KeAcquireSpinLock(pSpinLock, &oldIrql);
-
-		if (pDrvExt->pendingIrp != NULL)
 		{
+			if (pDrvExt->pendingIrp != NULL)
+			{
 #ifdef DBG
-			PRINT_DEBUG("Process pending IRP");
+				PRINT_DEBUG("Process pending IRP");
 #endif
-			CompleteReadIrp(pDrvExt->pendingIrp, newTarget);
-			pDrvExt->pendingIrp = NULL;
-		}
-		else
-		{
-			PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
-			newEntry->data = newTarget;
+				CompleteReadIrp(pDrvExt->pendingIrp, newTarget);
+				pDrvExt->pendingIrp = NULL;
+			}
+			else
+			{
+				PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
+				newEntry->data = newTarget;
 
 #ifdef DBG
-			PRINT_DEBUG("Inserting new target");
+				PRINT_DEBUG("Inserting new target");
 #endif
 
-			InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));
+				InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));
+			}
 		}
-
 		KeReleaseSpinLock(pSpinLock, oldIrql);
+
 	}
 }

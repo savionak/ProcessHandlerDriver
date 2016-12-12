@@ -86,27 +86,28 @@ NTSTATUS ReadWriteDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 	
 
 	PDRIVER_EXTENSION_EX pDrvExt = (PDRIVER_EXTENSION_EX)IoGetDriverObjectExtension(pDeviceObj->DriverObject, CLIENT_ID_ADDR);
-	PKSPIN_LOCK pSpinLock = &(pDrvExt->targetListAccessSync);
+	PKSPIN_LOCK pSpinLock = &(pDrvExt->drvExtSpinLock);
 
 	KIRQL oldIrql;
+
 	KeAcquireSpinLock(pSpinLock, &oldIrql);
-
-	if (!IsListEmpty(&(pDrvExt->targetsList)))
 	{
-		PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
-		PTARGETS_LIST_ENTRY nextTarget = (PTARGETS_LIST_ENTRY)RemoveHeadList(targetsList);
+		if (!IsListEmpty(&(pDrvExt->targetsList)))
+		{
+			PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
+			PTARGETS_LIST_ENTRY nextTarget = (PTARGETS_LIST_ENTRY)RemoveHeadList(targetsList);
 
-		status = CompleteReadIrp(pIrp, nextTarget->data);
+			status = CompleteReadIrp(pIrp, nextTarget->data);
 
-		ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
+			ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
+		}
+		else
+		{
+			IoMarkIrpPending(pIrp);
+			pDrvExt->pendingIrp = pIrp;
+			status = STATUS_PENDING;
+		}
 	}
-	else
-	{
-		IoMarkIrpPending(pIrp);
-		pDrvExt->pendingIrp = pIrp;
-		status = STATUS_PENDING;
-	}
-
 	KeReleaseSpinLock(pSpinLock, oldIrql);
 
 #ifdef DBG
@@ -140,27 +141,47 @@ NTSTATUS CreateCloseDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 	BOOLEAN isReadFile = RtlEqualUnicodeString(openingFileName, readFileName, TRUE);
 	if (isReadFile)
 	{
+		PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(pDeviceObj->DriverObject, CLIENT_ID_ADDR);
+		PKSPIN_LOCK pSpinLock = &(pDrvExt->drvExtSpinLock);
+
+		KIRQL oldIrql;
+
 		if (FlagOn(pIrp->Flags, IRP_CREATE_OPERATION))
 		{
-			if (!(pDeviceExt->isFileOpen))
+			KeAcquireSpinLock(pSpinLock, &oldIrql);
 			{
-				pDeviceExt->isFileOpen = TRUE;
-				info = FILE_OPENED;
+				if (!(pDeviceExt->isFileOpen))
+				{
+					pDeviceExt->isFileOpen = TRUE;
+					info = FILE_OPENED;
 #ifdef DBG
-				DbgPrint(" opened.");
+					DbgPrint(" opened.");
 #endif
-			}
-			else
-			{
-				status = STATUS_FILE_NOT_AVAILABLE;
+				}
+				else
+				{
+					status = STATUS_FILE_NOT_AVAILABLE;
 #ifdef DBG
-				DbgPrint(" is already opened by another program.");
+					DbgPrint(" is already opened by another program.");
 #endif
+				}
 			}
+			KeReleaseSpinLock(pSpinLock, oldIrql);
 		}
 		else if (FlagOn(pIrp->Flags, IRP_CLOSE_OPERATION))
 		{
-			pDeviceExt->isFileOpen = FALSE;
+			KeAcquireSpinLock(pSpinLock, &oldIrql);
+			{
+				if (pDrvExt->pendingIrp != NULL)
+				{
+					IoCancelIrp(pDrvExt->pendingIrp);
+					pDrvExt->pendingIrp = NULL;
+				}
+
+				pDeviceExt->isFileOpen = FALSE;
+			}
+			KeReleaseSpinLock(pSpinLock, oldIrql);
+
 			status = STATUS_FILE_CLOSED;
 #ifdef DBG
 			DbgPrint(" closed.");
