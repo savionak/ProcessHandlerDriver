@@ -213,6 +213,12 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 {
 	UNREFERENCED_PARAMETER(ParentId);
 
+	PDEVICE_EXTENSION pDeviceExt = gDrvObj->DeviceObject->DeviceExtension;
+	if (!(pDeviceExt->isFileOpen))
+	{
+		return;
+	}
+
 	PEPROCESS pProcStruct;
 	NTSTATUS status = PsLookupProcessByProcessId(ProcessId, &pProcStruct);
 	if (!NT_SUCCESS(status))
