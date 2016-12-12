@@ -11,6 +11,6 @@
 #define	SYS_DEVICE_REG_NAME_W L"\\Device\\" SYS_DEVICE_NAME_W
 
 // Optional breakpoints (comment to disable)
-#define DBG_INIT_BREAK
+//#define DBG_INIT_BREAK
 
 #define PH_POOL_TAG '1gaT'
