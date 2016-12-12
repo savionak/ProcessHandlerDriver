@@ -35,13 +35,14 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	InitializeListHead(&(pDriverExt->targetsList));
 
 #ifdef DBG
-	DbgPrint("(target name ok)");
+	DbgPrint("(target name OK)...");
 #endif
 
 	KeInitializeSpinLock(&(pDriverExt->targetListAccessSync));
+	pDriverExt->pendingIrp = NULL;
 
 #ifdef DBG
-	DbgPrint("(event ok)");
+	DbgPrint("OK");
 #endif
 
 #ifdef DBG
@@ -235,17 +236,14 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 	RtlInitString(&procName, procNameStr);
 
 	PDRIVER_EXTENSION_EX pDrvExt = IoGetDriverObjectExtension(gDrvObj, CLIENT_ID_ADDR);
-	if (pDrvExt == NULL)
-	{
-#ifdef DBG
-		PRINT_ERROR("Can't get DriverObjectExtension");
-#endif
-		return;
-	}
 
 	BOOLEAN isTarget = RtlEqualString(&(pDrvExt->targetName), &procName, TRUE);
 	if (isTarget)
 	{
+		READ_BUFFER_TYPE newTarget;
+		newTarget.pid = ProcessId;
+		newTarget.isCreate = isCreate;
+
 #ifdef DBG
 		PRINT_DEBUG("Target process hit!");
 		DbgPrint(" PID: %d ", ProcessId);
@@ -256,16 +254,31 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 			DbgPrint(" Terminated\n");
 #endif
 
-		PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
-		newEntry->data.pid = ProcessId;
-		newEntry->data.isCreate = isCreate;
+		PKSPIN_LOCK pSpinLock = &(pDrvExt->targetListAccessSync);
+
+		KIRQL oldIrql;
+		KeAcquireSpinLock(pSpinLock, &oldIrql);
+
+		if (pDrvExt->pendingIrp != NULL)
+		{
+#ifdef DBG
+			PRINT_DEBUG("Process pending IRP");
+#endif
+			CompleteReadIrp(pDrvExt->pendingIrp, newTarget);
+			pDrvExt->pendingIrp = NULL;
+		}
+		else
+		{
+			PTARGETS_LIST_ENTRY newEntry = ExAllocatePoolWithTag(NonPagedPool, sizeof(TARGETS_LIST_ENTRY), PH_POOL_TAG);
+			newEntry->data = newTarget;
 
 #ifdef DBG
-		PRINT_DEBUG("Inserting new target");
+			PRINT_DEBUG("Inserting new target");
 #endif
-		PKSPIN_LOCK spinLock = &(pDrvExt->targetListAccessSync);
 
-		ExInterlockedInsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry), spinLock);
+			InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));
+		}
 
+		KeReleaseSpinLock(pSpinLock, oldIrql);
 	}
 }

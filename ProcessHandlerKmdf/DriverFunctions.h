@@ -16,3 +16,6 @@ DRIVER_DISPATCH CreateCloseDispatch;
 
 // DeviceIoControl dispatcher
 DRIVER_DISPATCH DeviceControlDispatch;
+
+// Complete (pending or not) ReadIrp: MUST be called inside synchronized block
+NTSTATUS CompleteReadIrp(PIRP pIrp, READ_BUFFER_TYPE srcBuf);

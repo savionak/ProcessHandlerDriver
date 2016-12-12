@@ -10,6 +10,31 @@ NTSTATUS CompleteIrp(PIRP Irp, NTSTATUS status, ULONG info)
 	return status;
 }
 
+NTSTATUS CompleteReadIrp(PIRP pIrp, READ_BUFFER_TYPE srcBuf)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	ULONG bytesTrasfered = 0;
+
+#ifdef DBG
+	PRINT_DEBUG("Getting last target..");
+#endif	
+
+	PMDL mdlAddr = pIrp->MdlAddress;
+	READ_BUFFER_TYPE *buf = MmGetSystemAddressForMdlSafe(mdlAddr, LowPagePriority);
+
+	*buf = srcBuf;
+	bytesTrasfered = READ_BUFFER_SIZE;
+
+#ifdef DBG
+	PRINT_DEBUG("Read IRP Porcessed");
+	PRINT_DEBUG("Pid: ");
+	DbgPrint("%ld action: %s is read ", buf->pid, buf->isCreate ? "Created" : "Terminated");
+#endif
+
+	CompleteIrp(pIrp, status, bytesTrasfered);
+	return status;
+}
+
 
 // Major driver functions to register in DriverEntry
 
@@ -60,58 +85,33 @@ NTSTATUS ReadWriteDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 	}
 	
 
-	READ_BUFFER_TYPE *buf = MmGetSystemAddressForMdlSafe(mdlAddr, LowPagePriority);
 	PDRIVER_EXTENSION_EX pDrvExt = (PDRIVER_EXTENSION_EX)IoGetDriverObjectExtension(pDeviceObj->DriverObject, CLIENT_ID_ADDR);
-	if (pDrvExt == NULL)
-	{
-#ifdef DBG
-		PRINT_ERROR("Can't get DriverObjectExtension");
-#endif
-		return STATUS_SOURCE_ELEMENT_EMPTY;
-	}
-
-
-	ULONG bytesTrasfered = 0;
-
-#ifdef DBG
-	PRINT_DEBUG("Getting last target..");
-#endif	
 	PKSPIN_LOCK pSpinLock = &(pDrvExt->targetListAccessSync);
 
 	KIRQL oldIrql;
 	KeAcquireSpinLock(pSpinLock, &oldIrql);
 
-	PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
-	if (!IsListEmpty(targetsList))
+	if (!IsListEmpty(&(pDrvExt->targetsList)))
 	{
+		PLIST_ENTRY targetsList = &(pDrvExt->targetsList);
 		PTARGETS_LIST_ENTRY nextTarget = (PTARGETS_LIST_ENTRY)RemoveHeadList(targetsList);
-		KeReleaseSpinLock(pSpinLock, oldIrql);
 
-		*buf = nextTarget->data;
+		status = CompleteReadIrp(pIrp, nextTarget->data);
+
 		ExFreePoolWithTag(nextTarget, PH_POOL_TAG);
-		bytesTrasfered = READ_BUFFER_SIZE;
-
-#ifdef DBG
-		DbgPrint("SUCCESS");
-		PRINT_DEBUG("Value ");
-		DbgPrint("%ld is read ", *buf);
-#endif
 	}
 	else
 	{
-		KeReleaseSpinLock(pSpinLock, oldIrql);
-#ifdef DBG
-		DbgPrint("FAILED");
-		PRINT_DEBUG("Targets list is empty");
-#endif
-		status = STATUS_SOURCE_ELEMENT_EMPTY;
+		IoMarkIrpPending(pIrp);
+		pDrvExt->pendingIrp = pIrp;
+		status = STATUS_PENDING;
 	}
 
+	KeReleaseSpinLock(pSpinLock, oldIrql);
 
 #ifdef DBG
 	PRINT_DEBUG("Complite ReadWrite dispatch routine\n");
 #endif
-	CompleteIrp(pIrp, status, bytesTrasfered);
 	return status;
 }
 
