@@ -23,5 +23,8 @@ typedef struct _DATA_BUFFER {
 // Target process name
 #define TARGET_PROCESS_NAME "calc.exe"
 
+//
+#define CHILD_PROCESS_NAME_W L"notepad.exe"
+
 // IOCTL codes to access driver from usermode
 
