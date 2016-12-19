@@ -262,7 +262,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 			if (pDrvExt->pendingIrp != NULL)
 			{
 #ifdef DBG
-				PRINT_DEBUG("Process pending IRP");
+				PRINT_DEBUG("Process pending IRP\n");
 #endif
 				CompleteReadIrp(pDrvExt->pendingIrp, newTarget);
 				pDrvExt->pendingIrp = NULL;
@@ -273,7 +273,7 @@ VOID CreateProcessNotifyRoutine(_In_ HANDLE ParentId, _In_ HANDLE ProcessId, _In
 				newEntry->data = newTarget;
 
 #ifdef DBG
-				PRINT_DEBUG("Inserting new target");
+				PRINT_DEBUG("Inserting new target\n");
 #endif
 
 				InsertTailList(&(pDrvExt->targetsList), &(newEntry->listEntry));

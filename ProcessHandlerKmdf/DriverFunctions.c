@@ -28,7 +28,7 @@ NTSTATUS CompleteReadIrp(PIRP pIrp, READ_BUFFER_TYPE srcBuf)
 #ifdef DBG
 	PRINT_DEBUG("Read IRP Porcessed");
 	PRINT_DEBUG("Pid: ");
-	DbgPrint("%ld action: %s is read ", buf->pid, buf->isCreate ? "Created" : "Terminated");
+	DbgPrint("%ld action: %s is read\n", buf->pid, buf->isCreate ? "Created" : "Terminated");
 #endif
 
 	CompleteIrp(pIrp, status, bytesTrasfered);
@@ -104,6 +104,8 @@ NTSTATUS ReadWriteDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 		else
 		{
 			IoMarkIrpPending(pIrp);
+			IoSetCancelRoutine(pIrp, IrpCancel);
+
 			pDrvExt->pendingIrp = pIrp;
 			status = STATUS_PENDING;
 		}
@@ -124,7 +126,7 @@ NTSTATUS CreateCloseDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 #endif
 
 	NTSTATUS status = STATUS_SUCCESS;
-	ULONG info = FILE_EXISTS;
+	ULONG info = 0;
 	PIO_STACK_LOCATION pIrpStack = IoGetCurrentIrpStackLocation(pIrp);
 
 #ifdef DBG
@@ -182,7 +184,6 @@ NTSTATUS CreateCloseDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 			}
 			KeReleaseSpinLock(pSpinLock, oldIrql);
 
-			status = STATUS_FILE_CLOSED;
 #ifdef DBG
 			DbgPrint(" closed.");
 #endif
@@ -190,7 +191,7 @@ NTSTATUS CreateCloseDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 	}
 	else
 	{
-		status = STATUS_FILE_NOT_AVAILABLE;
+		status = STATUS_NOT_FOUND;
 #ifdef DBG
 		DbgPrint(" not found. Reason: Incorrect file name.");
 #endif
@@ -224,4 +225,10 @@ NTSTATUS DeviceControlDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 #endif
 	CompleteIrp(pIrp, status, 0);
 	return status;
+}
+
+VOID IrpCancel(_In_ PDEVICE_OBJECT DeviceObj, _In_ PIRP pIrp)
+{
+	KIRQL cancelIrql = pIrp->CancelIrql;
+	IoReleaseCancelSpinLock(cancelIrql);
 }
