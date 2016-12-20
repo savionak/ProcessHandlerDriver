@@ -151,24 +151,26 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PostBuildEvent>
-      <Command>del /Q  "%VBOX_SHARED_FOLDER%\_Driver\$(TargetName)"
-xcopy /Y /E /S "$(TargetDir)*" "%VBOX_SHARED_FOLDER%\_Driver\$(TargetName)\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PostBuildEvent>
-      <Message>Deploy driver to shared folder</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PostBuildEvent>
-      <Command>del /Q  "%VBOX_SHARED_FOLDER%\_Driver\$(TargetName)"
-xcopy /Y /E /S "$(TargetDir)*" "%VBOX_SHARED_FOLDER%\_Driver\$(TargetName)\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PostBuildEvent>
-      <Message>Deploy driver to shared folder</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -36,6 +36,15 @@ NTSTATUS CompleteReadIrp(PIRP pIrp, READ_BUFFER_TYPE srcBuf)
 }
 
 
+VOID IrpCancel(_In_ PDEVICE_OBJECT DeviceObj, _In_ PIRP pIrp)
+{
+	UNREFERENCED_PARAMETER(DeviceObj);
+	KIRQL cancelIrql = pIrp->CancelIrql;
+	IoReleaseCancelSpinLock(cancelIrql);
+}
+
+
+
 // Major driver functions to register in DriverEntry
 
 NTSTATUS ReadWriteDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
@@ -225,10 +234,4 @@ NTSTATUS DeviceControlDispatch(IN PDEVICE_OBJECT pDeviceObj, IN PIRP pIrp)
 #endif
 	CompleteIrp(pIrp, status, 0);
 	return status;
-}
-
-VOID IrpCancel(_In_ PDEVICE_OBJECT DeviceObj, _In_ PIRP pIrp)
-{
-	KIRQL cancelIrql = pIrp->CancelIrql;
-	IoReleaseCancelSpinLock(cancelIrql);
 }

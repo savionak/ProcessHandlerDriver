@@ -99,11 +99,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>del /Q  "%VBOX_SHARED_FOLDER%\_Driver\_clients\$(TargetFileName)"
-xcopy /Y /E /S "$(TargetPath)" "%VBOX_SHARED_FOLDER%\_Driver\_clients\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Deploy client to shared folder</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -138,11 +139,12 @@ xcopy /Y /E /S "$(TargetPath)" "%VBOX_SHARED_FOLDER%\_Driver\_clients\"</Command
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>del /Q  "%VBOX_SHARED_FOLDER%\_Driver\_clients\$(TargetFileName)"
-xcopy /Y /E /S "$(TargetPath)" "%VBOX_SHARED_FOLDER%\_Driver\_clients\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Deploy client to shared folder</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
